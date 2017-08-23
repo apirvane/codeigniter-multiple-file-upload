@@ -4,9 +4,21 @@
  * Exenstion File Uploading Class
  */
 		
-class MY_Upload extends CI_Upload {
+class MY_Upload extends CI_Upload
+{
+    protected $_CI;
+    protected $multi_data;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->_CI =& get_instance();
+        $this->_CI->load->library("MY_Security");
+    }
 	
-	public function do_multi_upload( $field = 'userfile', $return_info = TRUE, $filenames = NULL ){
+	public function do_multi_upload( $field = 'userfile', $return_info = TRUE, $filenames = NULL )
+    {
 
 		// Is $_FILES[$field] set? If not, no reason to continue.
 		if ( ! isset($_FILES[$field]))
@@ -48,7 +60,7 @@ class MY_Upload extends CI_Upload {
 		if( is_array( $_FILES[$field] ) )
 		{
 	
-			//$count = count($_FILES[$field]['name']); //Number of files to process
+			$this->nb_of_files = count($_FILES[$field]['name']); //Number of files to process
 			
 			foreach( $_FILES[$field]['name'] as $k => $file )
 			{
@@ -160,7 +172,7 @@ class MY_Upload extends CI_Upload {
 				}
 	
 				// Sanitize the file name for security
-				$this->file_name = $this->clean_file_name($this->file_name);
+				$this->file_name = $this->_CI->security->sanitize_filename($this->file_name);
 		
 				// Truncate the file name if it's too long
 				if ($this->max_filename > 0)
@@ -234,19 +246,17 @@ class MY_Upload extends CI_Upload {
 				
 				if( $return_info === TRUE )
 				{
-					
 					$return_value[$k] = $this->data();
-				
 				}
 				else
 				{
-				
 					$return_value = TRUE;
-				
 				}
-				
-				
+
 			}
+
+            if( $return_info === TRUE )
+                $this->set_multi_data( $return_value );
 			
 			return $return_value;
 		
@@ -263,6 +273,42 @@ class MY_Upload extends CI_Upload {
 	
 	}
 
-}
+    /**
+     * Set Multidimensional Data Array
+     *
+     * @param	multidimensional array	$data
+     * @return	mixed
+     */
+    private function set_multi_data( $data )
+    {
+        $this->multi_data = $data;
+    }
 
-?>
+
+    /**
+     * Finalized Data Array
+     *
+     * Returns an associative multidimensional array containing all of the information
+     * related to the upload, allowing the developer easy access in one array.
+     *
+     * @param	int     $key
+     * @param	string	$index
+     * @return	mixed
+     */
+    public function get_multi_data( $key = -1, $index = NULL )
+    {
+
+        if ( $key >= 0 && !empty($index) )
+        {
+            return isset( $this->multi_data[$key][$index] ) ? $this->multi_data[$key][$index] : NULL;
+        }
+
+        return $this->multi_data;
+    }
+
+    public function get_nb_of_files()
+    {
+        return $this->nb_of_files;
+    }
+
+}
